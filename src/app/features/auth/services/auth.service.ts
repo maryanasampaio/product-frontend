@@ -3,73 +3,89 @@
  *
  * Orquestra o fluxo de autenticação:
  * - Chama Repository (API)
- * - Salva no localStorage
- * - Redireciona usuário
+ * - Gerencia estado de autenticação
+ * - Salva/recupera dados do localStorage
+ *
+ * RESPONSABILIDADES:
+ * ✅ Chamar AuthRepository para login
+ * ✅ Armazenar token e dados do usuário
+ * ✅ Verificar se usuário está autenticado
  */
 
 import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { AuthRepository } from '../repositories/auth.repository';
-import { LoginRequest, LoginResponse, User } from '../models/auth.model';
+import { LoginRequest, LoginResponse } from '../models/auth.model';
 import { saveToken, saveUser, removeToken, removeUser, getToken, getUser } from '../utils/storage.util';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  constructor(
-    private authRepository: AuthRepository,
-    private router: Router
-  ) {}
+  constructor(private authRepository: AuthRepository) {}
 
   /**
-   * Login: autentica usuário
-   * - Chama API via Repository
-   * - Salva token e user no localStorage
-   * - Redireciona para /dashboard
+   * LOGIN
+   *
+   * Realiza autenticação do usuário
+   * - Chama repository para fazer request à API
+   * - Salva token e dados do usuário no localStorage
+   * - Retorna Observable para o component tratar
+   *
+   * @param username - Nome de usuário
+   * @param password - Senha
+   * @returns Observable<LoginResponse> - Dados do usuário autenticado
    */
   login(username: string, password: string): Observable<LoginResponse> {
     const credentials: LoginRequest = { username, password };
 
     return this.authRepository.login(credentials).pipe(
       tap(response => {
+        // Salva dados no localStorage
         saveToken(response.token);
         saveUser(response.username, response.nome);
-        this.router.navigate(['/dashboard']);
-      }),
-      catchError(error => {
-        console.error('Erro no login:', error);
-        return throwError(() => new Error('Falha na autenticação. Verifique suas credenciais.'));
       })
+      // NÃO trata erro aqui - deixa o component decidir o que fazer
     );
   }
 
   /**
-   * Logout: remove autenticação e redireciona
+   * LOGOUT
+   *
+   * Remove token e dados do usuário do localStorage
    */
   logout(): void {
     removeToken();
     removeUser();
-    this.router.navigate(['/login']);
   }
 
+  /**
+   * IS AUTHENTICATED
+   *
+   * Verifica se usuário está autenticado (tem token válido)
+   * @returns true se existe token, false caso contrário
+   */
+  isAuthenticated(): boolean {
+    return !!getToken();
+  }
+
+  /**
+   * GET TOKEN
+   *
+   * Retorna o token JWT armazenado
+   * @returns Token ou null se não existir
+   */
   getToken(): string | null {
     return getToken();
   }
 
-  getCurrentUser(): User | null {
-    const user = getUser();
-    const token = getToken();
-
-    if (user && token) {
-      return { ...user, token };
-    }
-
-    return null;
-  }
-
-  isAuthenticated(): boolean {
-    return !!getToken();
+  /**
+   * GET CURRENT USER
+   *
+   * Retorna dados do usuário logado
+   * @returns Dados do usuário ou null
+   */
+  getCurrentUser() {
+    return getUser();
   }
 }

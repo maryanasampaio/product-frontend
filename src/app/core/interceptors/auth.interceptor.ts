@@ -30,7 +30,7 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { getToken } from '../utils/storage.util';
+import { getToken } from '../../features/auth/utils/storage.util';
 
 /**
  * @Injectable()
