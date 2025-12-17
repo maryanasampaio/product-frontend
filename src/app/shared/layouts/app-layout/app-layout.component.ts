@@ -27,12 +27,12 @@ import { RouterOutlet } from '@angular/router';
     <div class="min-h-screen bg-gray-50">
       <!-- HEADER/NAVBAR (adicionar futuramente) -->
       <!-- <app-navbar /> -->
-      
+
       <!-- CONTEÚDO PRINCIPAL -->
       <main class="container mx-auto px-4 py-8">
         <router-outlet />
       </main>
-      
+
       <!-- FOOTER (opcional) -->
       <!-- <app-footer /> -->
     </div>
