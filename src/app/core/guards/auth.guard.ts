@@ -1,49 +1,14 @@
-/**
- * ============================================================================
- * AUTH GUARD - PROTEÇÃO DE ROTAS
- * ============================================================================
- *
- * RESPONSABILIDADE: Proteger rotas que precisam de autenticação
- *
- * O que é um Guard?
- * - É um "porteiro" das rotas
- * - Decide se usuário pode ou não acessar uma rota
- * - Executa ANTES de carregar o component da rota
- *
- * Por que usar?
- * ✅ Impede usuários não autenticados de acessar áreas protegidas
- * ✅ Redireciona automaticamente para login
- * ✅ Melhora segurança (user não vê conteúdo sem permissão)
- * ✅ Melhora UX (evita errors 401 na UI)
- *
- * Tipos de Guards:
- * - CanActivate: Pode ativar a rota? (usado aqui)
- * - CanDeactivate: Pode sair da rota? (ex: formulário não salvo)
- * - CanLoad: Pode carregar módulo lazy? (otimização)
- *
- * ANALOGIA: É como a segurança de um prédio que só deixa entrar
- * quem tem crachá (token) válido.
- * ============================================================================
- */
+
 
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../../features/auth/services/auth.service';
 
 /**
- * ========================================================================
- * AUTH GUARD - Função Guard Moderna (Functional Guard)
- * ========================================================================
- *
- * No Angular moderno (v15+), Guards são funções em vez de classes.
- *
- * CanActivateFn - Tipo do TypeScript para funções guard
- *
- * Esta função é chamada pelo Angular Router ANTES de ativar uma rota.
- *
- * @param route - Informações da rota que está tentando acessar
- * @param state - Estado do router (URL atual, params, etc.)
- * @returns
+
+  @param route - Informações da rota que está tentando acessar
+  @param state - Estado do router (URL atual, params, etc.)
+  @returns
  *   - true: Permite acesso à rota
  *   - false: Bloqueia acesso
  *   - UrlTree: Redireciona para outra rota
@@ -57,18 +22,18 @@ import { AuthService } from '../../features/auth/services/auth.service';
  *
  * Como usar nas rotas:
  * ```typescript
- * // app.routes.ts
+ * 
  * export const routes: Routes = [
  *   { path: 'login', component: LoginComponent },
  *   {
  *     path: 'dashboard',
  *     component: DashboardComponent,
- *     canActivate: [authGuard]  // ← Rota protegida!
+ *     canActivate: [authGuard]  
  *   },
  *   {
  *     path: 'products',
  *     component: ProductsComponent,
- *     canActivate: [authGuard]  // ← Também protegida!
+ *     canActivate: [authGuard]  
  *   }
  * ];
  * ```
@@ -110,7 +75,7 @@ export const authGuard: CanActivateFn = (route, state) => {
    * Se retorna true: Usuário está autenticado, pode prosseguir
    */
   if (authService.isAuthenticated()) {
-    // ✅ AUTORIZADO: Permite acesso à rota
+    
     return true;
   }
 
@@ -133,10 +98,9 @@ export const authGuard: CanActivateFn = (route, state) => {
    *
    * state.url - URL completa que o usuário tentou acessar
    */
-  router.navigate(['/login'], {
+  // Importante: em guards, retorne uma UrlTree em vez de chamar navigate.
+  // Isso garante que o Router faça o redirecionamento dentro do ciclo de navegação.
+  return router.createUrlTree(['/login'], {
     queryParams: { returnUrl: state.url }
   });
-
-  // ❌ BLOQUEADO: Não permite acesso à rota
-  return false;
 };

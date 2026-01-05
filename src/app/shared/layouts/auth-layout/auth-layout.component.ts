@@ -1,4 +1,6 @@
-/**
+
+
+                                                                                                                                                                           /**
  * AUTH LAYOUT COMPONENT
  *
  * Layout para páginas de autenticação (login, registro, recuperação de senha)
