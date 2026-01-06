@@ -28,9 +28,11 @@
  */
 
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, throwError } from 'rxjs';
 import { getToken } from '../../features/auth/utils/storage.util';
+import { AuthService } from '../../features/auth/services/auth.service';
+import { Router } from '@angular/router';
 
 /**
  * @Injectable()
@@ -40,6 +42,7 @@ import { getToken } from '../../features/auth/utils/storage.util';
  */
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+  constructor(private authService: AuthService, private router: Router) {}
   /**
    * ========================================================================
    * INTERCEPT - Interceptar Requisição HTTP
@@ -103,11 +106,27 @@ export class AuthInterceptor implements HttpInterceptor {
 
       // 3. Passa a requisição MODIFICADA para o próximo handler
       // next.handle() continua a cadeia (pode ter outros interceptors)
-      return next.handle(clonedRequest);
+      return next.handle(clonedRequest).pipe(
+        catchError((error: HttpErrorResponse) => this.handleAuthError(error))
+      );
     }
 
     // 4. Se NÃO existe token, passa requisição ORIGINAL sem modificar
     // Útil para endpoints públicos que não precisam de autenticação (ex: /login)
-    return next.handle(req);
+    return next.handle(req).pipe(
+      catchError((error: HttpErrorResponse) => this.handleAuthError(error))
+    );
+  }
+
+  private handleAuthError(error: HttpErrorResponse) {
+    if (error && error.status === 401) {
+      this.authService.logout();
+      // Em navegador, redireciona para login mantendo a rota atual como returnUrl
+      if (typeof window !== 'undefined') {
+        const returnUrl = this.router.url || '/';
+        this.router.navigate(['/login'], { queryParams: { returnUrl } });
+      }
+    }
+    return throwError(() => error);
   }
 }

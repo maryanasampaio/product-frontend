@@ -45,8 +45,7 @@
  * ```
  */
 export function saveToken(token: string): void {
-  // localStorage.setItem(chave, valor)
-  // Armazena string no navegador de forma persistente
+  if (!isBrowser()) return;
   localStorage.setItem('auth_token', token);
 }
 
@@ -71,8 +70,7 @@ export function saveToken(token: string): void {
  * ```
  */
 export function getToken(): string | null {
-  // localStorage.getItem(chave)
-  // Retorna o valor armazenado ou null se não existir
+  if (!isBrowser()) return null;
   return localStorage.getItem('auth_token');
 }
 
@@ -89,8 +87,7 @@ export function getToken(): string | null {
  * ```
  */
 export function removeToken(): void {
-  // localStorage.removeItem(chave)
-  // Remove a entrada do localStorage
+  if (!isBrowser()) return;
   localStorage.removeItem('auth_token');
 }
 
@@ -115,8 +112,6 @@ export function removeToken(): void {
  * ```
  */
 export function isAuthenticated(): boolean {
-  // !! converte qualquer valor para boolean
-  // !!"texto" = true, !!null = false, !!"" = false
   return !!getToken();
 }
 
@@ -153,8 +148,7 @@ export function isAuthenticated(): boolean {
  * ```
  */
 export function saveUser(username: string, nome: string): void {
-  // JSON.stringify() converte objeto JavaScript para string JSON
-  // Necessário porque localStorage só armazena strings
+  if (!isBrowser()) return;
   const userData = { username, nome };
   localStorage.setItem('user_data', JSON.stringify(userData));
 }
@@ -179,11 +173,8 @@ export function saveUser(username: string, nome: string): void {
  * ```
  */
 export function getUser(): { username: string; nome: string } | null {
-  // Pega string JSON do localStorage
+  if (!isBrowser()) return null;
   const data = localStorage.getItem('user_data');
-
-  // Se não existe, retorna null
-  // Se existe, converte de JSON string para objeto JavaScript
   return data ? JSON.parse(data) : null;
 
   // Operador ternário equivale a:
@@ -207,5 +198,10 @@ export function getUser(): { username: string; nome: string } | null {
  * ```
  */
 export function removeUser(): void {
+  if (!isBrowser()) return;
   localStorage.removeItem('user_data');
+}
+
+function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 }

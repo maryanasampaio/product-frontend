@@ -66,7 +66,16 @@ export class AuthService {
    * @returns true se existe token, false caso contrário
    */
   isAuthenticated(): boolean {
-    return !!getToken();
+    const token = getToken();
+    if (!token) return false;
+
+    // Se o token estiver expirado ou inválido, limpa e retorna false
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -87,5 +96,53 @@ export class AuthService {
    */
   getCurrentUser() {
     return getUser();
+  }
+
+  // ---------------------
+  // Helpers
+  // ---------------------
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = this.decodeJwtPayload(token);
+      if (!payload || typeof payload.exp !== 'number') {
+        return true;
+      }
+      const expiresAtMs = payload.exp * 1000;
+      return Date.now() >= expiresAtMs;
+    } catch {
+      return true;
+    }
+  }
+
+  private decodeJwtPayload(token: string): any | null {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+
+    // Pad base64 string
+    const padLength = (4 - (base64.length % 4)) % 4;
+    const padded = base64 + '='.repeat(padLength);
+
+    let json = '';
+    if (typeof atob === 'function') {
+      json = decodeURIComponent(
+        Array.prototype.map
+          .call(atob(padded), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+    } else {
+      // Node/SSR
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const buf: any = (global as any).Buffer || (globalThis as any).Buffer;
+      if (!buf) return null;
+      const bin = buf.from(padded, 'base64').toString('binary');
+      json = decodeURIComponent(
+        Array.prototype.map
+          .call(bin, (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+    }
+    return JSON.parse(json);
   }
 }
