@@ -14,7 +14,7 @@
 
 import { Injectable } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { AuthRepository } from '../repositories/auth.repository';
+import { AuthRepository } from '../repository/auth.repository';
 import { LoginRequest, LoginResponse } from '../models/auth.model';
 import { saveToken, saveUser, removeToken, removeUser, getToken, getUser } from '../utils/storage.util';
 
@@ -40,7 +40,7 @@ export class AuthService {
     const credentials: LoginRequest = { username, password };
 
     return this.authRepository.login(credentials).pipe(
-      tap(response => {
+      tap((response: LoginResponse) => {
         // Salva dados no localStorage
         saveToken(response.token);
         saveUser(response.username, response.nome);
@@ -101,11 +101,37 @@ export class AuthService {
   // ---------------------
   // Helpers
   // ---------------------
+  /**
+   * Retorna a permissão atual do usuário a partir do JWT
+   * Exemplos: 'ADMIN', 'USER'
+   */
+  getPermission(): string | null {
+    const token = getToken();
+    if (!token) return null;
+    try {
+      const payload = this.decodeJwtPayload(token);
+      const perm = payload?.permission;
+      return typeof perm === 'string' ? perm : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Verifica se o usuário possui a permissão requerida
+   */
+  hasPermission(required: string): boolean {
+    const current = this.getPermission();
+    if (!current) return false;
+    return current.toUpperCase() === required.toUpperCase();
+  }
+
   private isTokenExpired(token: string): boolean {
     try {
       const payload = this.decodeJwtPayload(token);
+      // Se não houver 'exp', considerar não expirado para compatibilidade
       if (!payload || typeof payload.exp !== 'number') {
-        return true;
+        return false;
       }
       const expiresAtMs = payload.exp * 1000;
       return Date.now() >= expiresAtMs;

@@ -1,6 +1,8 @@
 
 
 import { inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../../features/auth/services/auth.service';
 
@@ -66,6 +68,16 @@ export const authGuard: CanActivateFn = (route, state) => {
    */
   const authService = inject(AuthService);
   const router = inject(Router);
+  const platformId = inject(PLATFORM_ID);
+  const isBrowser = isPlatformBrowser(platformId);
+
+  // Em SSR (server), não há localStorage; trate como não autenticado
+  // para evitar renderizar páginas protegidas no servidor e depois redirecionar no cliente.
+  if (!isBrowser) {
+    return router.createUrlTree(['/login'], {
+      queryParams: { returnUrl: state.url }
+    });
+  }
 
   /**
    * VERIFICAÇÃO DE AUTENTICAÇÃO

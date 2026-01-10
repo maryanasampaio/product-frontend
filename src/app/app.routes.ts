@@ -25,23 +25,18 @@ export const routes: Routes = [
   },
 
   // ============================================================================
-  // ROTAS PROTEGIDAS (REQUEREM AUTENTICAÇÃO)
+  // ROTAS PÚBLICAS (SEM PROTEÇÃO)
   // ============================================================================
-  // Usa AppLayoutComponent com navbar/header
   {
     path: '',
     loadComponent: () =>
       import('./shared/layouts/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
-    canActivate: [authGuard], // ← Protege todas rotas filhas
     children: [
       {
         path: 'dashboard',
         loadComponent: () =>
           import('./features/products/pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       }
-      // Adicione aqui outras rotas protegidas:
-      // { path: 'products', loadComponent: ... },
-      // { path: 'profile', loadComponent: ... },
     ]
   },
 

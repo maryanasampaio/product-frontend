@@ -1,4 +1,62 @@
-<div class="bg-white rounded-lg shadow-md p-8">
-  <h1 class="text-3xl font-bold text-gray-900 mb-4">Dashboard</h1>
-  <p class="text-gray-600">Bem-vindo ao sistema!</p>
+<div class="container mx-auto px-4 py-8">
+  <!-- Cabeçalho -->
+  <div class="bg-white rounded-lg shadow-md p-8 mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Produtos</h1>
+    <p class="text-gray-600">Confira os produtos disponíveis em nossa loja!</p>
+  </div>
+
+  <!-- Estado de Carregamento -->
+  <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Mensagem de Erro -->
+  <div *ngIf="errorMessage && !isLoading" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+    <p class="font-medium">{{ errorMessage }}</p>
+  </div>
+
+  <!-- Lista Vazia -->
+  <div *ngIf="!isLoading && !errorMessage && produtos.length === 0" class="bg-gray-100 rounded-lg p-12 text-center">
+    <p class="text-gray-500 text-lg font-medium">Nenhum produto disponível no momento.</p>
+  </div>
+
+  <!-- Grid de Produtos -->
+  <div *ngIf="!isLoading && produtos.length > 0" class="bg-gray-50 rounded-lg shadow-md p-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <article 
+        *ngFor="let produto of produtos; trackBy: trackByProductId" 
+        class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+        
+        <!-- Imagem do Produto -->
+        <div class="h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+          <div *ngIf="produto.images && produto.images.length > 0" class="w-full h-full">
+            <img [src]="produto.images[0]" [alt]="produto.name" class="w-full h-full object-cover">
+          </div>
+          <div *ngIf="!produto.images || produto.images.length === 0" class="text-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Conteúdo do Card -->
+        <div class="p-4">
+          <h2 class="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">{{ produto.name }}</h2>
+          
+          <p class="text-gray-600 text-sm mb-3 line-clamp-3">{{ produto.description }}</p>
+          
+          <div class="flex items-center justify-between mt-4">
+            <span class="text-2xl font-bold text-blue-600">
+              R$ {{ (produto.price / 100).toFixed(2).replace('.', ',') }}
+            </span>
+          </div>
+
+          <!-- Botão de Ação -->
+          <button class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium">
+            Ver Detalhes
+          </button>
+        </div>
+      </article>
+    </div>
+  </div>
 </div>
