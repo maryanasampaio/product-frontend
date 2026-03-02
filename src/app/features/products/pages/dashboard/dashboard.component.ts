@@ -164,8 +164,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  onAdminAuthenticated(): void {
-    const loginObservable = this.adminModeService.enableAdminMode();
+  onAdminAuthenticated(password: string): void {
+    const loginObservable = this.adminModeService.enableAdminMode(password);
     if (loginObservable) {
       loginObservable.subscribe({
         next: () => {
@@ -174,7 +174,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('[Dashboard] Erro ao autenticar admin:', error);
-          alert('Erro ao fazer login. Verifique se o backend está rodando.');
+          
+          // Mensagem específica baseada no erro
+          let message = 'Erro ao fazer login.';
+          
+          if (error?.status === 401) {
+            message = '❌ Senha incorreta ou usuário sem permissão de administrador.';
+          } else if (error?.message) {
+            message = error.message;
+          } else if (!navigator.onLine) {
+            message = '⚠️ Verifique sua conexão com a internet.';
+          } else {
+            message = '⚠️ Erro ao conectar com o servidor. Verifique se o backend está rodando.';
+          }
+          
+          alert(message);
         }
       });
     } else {

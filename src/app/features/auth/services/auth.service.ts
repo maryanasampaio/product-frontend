@@ -41,10 +41,10 @@ export class AuthService {
 
     return this.authRepository.login(credentials).pipe(
       tap((response: LoginResponse) => {
-        // Salva accessToken no localStorage
-        saveToken(response.accessToken);
-        saveUser(response.username, response.username); // Backend real não retorna 'nome'
-        console.log('[AuthService] Login bem-sucedido:', response.username);
+        // Salva token no localStorage (backend retorna 'token', não 'accessToken')
+        saveToken(response.token);
+        saveUser(response.username, response.username);
+        console.log('[AuthService] Login bem-sucedido:', response.username, '| Permission:', response.permission);
       })
       // NÃO trata erro aqui - deixa o component decidir o que fazer
     );

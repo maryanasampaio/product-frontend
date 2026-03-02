@@ -79,54 +79,76 @@ export class AuthInterceptor implements HttpInterceptor {
    * ```
    */
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // 1. Pega o token JWT do localStorage
-    // Retorna string ou null
-    const token = getToken();
-
-    // 2. Se existe token, adiciona no header Authorization
-    if (token) {
-      /**
-       * HttpRequest é IMUTÁVEL (não pode ser modificado)
-       *
-       * Por isso usamos req.clone() para criar uma CÓPIA modificada
-       *
-       * .clone({ headers: ... }) - cria nova requisição com headers atualizados
-       * .set('Authorization', `Bearer ${token}`) - adiciona header
-       *
-       * Formato do header:
-       * Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-       *                ^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       *                tipo   token JWT
-       *
-       * "Bearer" é o esquema de autenticação padrão para JWT
-       */
-      const clonedRequest = req.clone({
-        headers: req.headers.set('Authorization', `Bearer ${token}`)
-      });
-
-      // 3. Passa a requisição MODIFICADA para o próximo handler
-      // next.handle() continua a cadeia (pode ter outros interceptors)
-      return next.handle(clonedRequest).pipe(
-        catchError((error: HttpErrorResponse) => this.handleAuthError(error))
+    // Verifica se a rota é pública (GET /produtos ou /api/products)
+    const isPublicRoute = this.isPublicEndpoint(req);
+    
+    // Se for rota pública, não adiciona token
+    if (isPublicRoute) {
+      return next.handle(req).pipe(
+        catchError((error: HttpErrorResponse) => this.handleAuthError(error, req))
       );
     }
 
-    // 4. Se NÃO existe token, passa requisição ORIGINAL sem modificar
-    // Útil para endpoints públicos que não precisam de autenticação (ex: /login)
+    // Para rotas privadas, adiciona token se existir
+    const token = getToken();
+    if (token) {
+      const clonedRequest = req.clone({
+        headers: req.headers.set('Authorization', `Bearer ${token}`)
+      });
+      return next.handle(clonedRequest).pipe(
+        catchError((error: HttpErrorResponse) => this.handleAuthError(error, req))
+      );
+    }
+
+    // Se não tem token para rota privada, ainda tenta (backend retornará 401)
     return next.handle(req).pipe(
-      catchError((error: HttpErrorResponse) => this.handleAuthError(error))
+      catchError((error: HttpErrorResponse) => this.handleAuthError(error, req))
     );
   }
 
-  private handleAuthError(error: HttpErrorResponse) {
-    if (error && error.status === 401) {
+  /**
+   * Verifica se o endpoint é público (não precisa de token)
+   * Rotas públicas: GET /produtos, GET /produtos/:id, GET /api/products, GET /api/products/:id
+   */
+  private isPublicEndpoint(req: HttpRequest<any>): boolean {
+    const url = req.url.toLowerCase();
+    const method = req.method.toUpperCase();
+    
+    // Endpoints públicos: apenas GET de produtos
+    if (method === 'GET') {
+      return url.includes('/produtos') || url.includes('/api/products');
+    }
+    
+    // Login é sempre público
+    if (url.includes('/auth/login')) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  private handleAuthError(error: HttpErrorResponse, req: HttpRequest<any>) {
+    // Tratamento específico para erro 401
+    if (error?.status === 401) {
+      const isLoginAttempt = req.url.includes('/auth/login');
+      
+      if (isLoginAttempt) {
+        // Se erro no login, deixa o componente tratar (senha incorreta)
+        return throwError(() => error);
+      }
+      
+      // Para outras rotas: sessão expirou
+      console.warn('[AuthInterceptor] Sessão expirada ou sem permissão (401)');
       this.authService.logout();
-      // Em navegador, redireciona para login mantendo a rota atual como returnUrl
+      
+      // Redireciona para dashboard (sem modo admin)
       if (typeof window !== 'undefined') {
-        const returnUrl = this.router.url || '/';
-        this.router.navigate(['/login'], { queryParams: { returnUrl } });
+        alert('⚠️ Sessão expirada ou sem permissão. Faça login novamente.');
+        // Força reload para resetar estado
+        window.location.href = '/dashboard';
       }
     }
+    
     return throwError(() => error);
   }
 }

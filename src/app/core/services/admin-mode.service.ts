@@ -32,16 +32,29 @@ export class AdminModeService {
 
   /**
    * Ativa o modo admin fazendo login no backend
+   * @param password - Senha digitada pelo usuário
    * Retorna Observable para o component tratar
+   * Backend valida: senha correta + permission = ADMIN
    */
-  enableAdminMode(): Observable<any> {
+  enableAdminMode(password: string): Observable<any> {
     return new Observable(observer => {
-      this.authService.login('admin', '123456').subscribe({
+      this.authService.login('admin', password).subscribe({
         next: (response) => {
+          // Validação: verifica se response contém permission=ADMIN
+          console.log('[AdminModeService] Response do backend:', response);
+          
+          if (response.permission !== 'ADMIN') {
+            console.error('[AdminModeService] Acesso negado. Permission:', response.permission);
+            this.authService.logout();
+            observer.error({ message: 'Acesso negado. Apenas administradores podem acessar.' });
+            return;
+          }
+
           if (isPlatformBrowser(this.platformId)) {
             localStorage.setItem('isAdminMode', 'true');
             this.isAdminSubject.next(true);
           }
+          console.log('[AdminModeService] ✅ Admin autenticado com sucesso! Permission:', response.permission);
           observer.next(response);
           observer.complete();
         },
@@ -73,13 +86,17 @@ export class AdminModeService {
 
   /**
    * Alterna entre modo admin e modo comum
+   * @param password - Senha (necessária ao ativar)
    */
-  toggleAdminMode(): Observable<any> | void {
+  toggleAdminMode(password?: string): Observable<any> | void {
     if (this.isAdminMode()) {
       this.disableAdminMode();
       return;
     } else {
-      return this.enableAdminMode();
+      if (password) {
+        return this.enableAdminMode(password);
+      }
+      return;
     }
   }
 }

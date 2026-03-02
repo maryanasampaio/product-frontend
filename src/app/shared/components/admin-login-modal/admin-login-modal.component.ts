@@ -48,15 +48,13 @@ import { FormsModule } from '@angular/forms';
 
           <button 
             type="submit"
+            [disabled]="isLoading"
+            [class.opacity-50]="isLoading"
+            [class.cursor-not-allowed]="isLoading"
             class="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold py-3 px-6 rounded-lg hover:from-orange-500 hover:to-orange-600 transition-all">
-            Entrar como Admin
+            {{ isLoading ? 'Verificando...' : 'Entrar como Admin' }}
           </button>
         </form>
-
-        <!-- Hint (remover em produção) -->
-        <div class="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500 text-center">
-          💡 Dica dev: senha é "utillar2026"
-        </div>
       </div>
     </div>
   `,
@@ -64,22 +62,31 @@ import { FormsModule } from '@angular/forms';
 })
 export class AdminLoginModalComponent {
   @Output() closeModal = new EventEmitter<void>();
-  @Output() adminAuthenticated = new EventEmitter<void>();
+  @Output() adminAuthenticated = new EventEmitter<string>();
 
   password = '';
   errorMessage = '';
-  
-  // Senha secreta (em produção, isso viria de um backend seguro)
-  private readonly SECRET_PASSWORD = 'utillar2026';
+  isLoading = false;
 
   onSubmit(): void {
-    if (this.password === this.SECRET_PASSWORD) {
-      this.adminAuthenticated.emit();
-      this.onClose();
+    if (this.password.trim()) {
+      this.isLoading = true;
+      this.errorMessage = '';
+      // Envia senha para o componente pai validar no backend
+      this.adminAuthenticated.emit(this.password);
     } else {
-      this.errorMessage = 'Senha incorreta. Tente novamente.';
-      this.password = '';
+      this.errorMessage = 'Por favor, digite a senha.';
     }
+  }
+
+  setError(message: string): void {
+    this.errorMessage = message;
+    this.isLoading = false;
+    this.password = '';
+  }
+
+  setSuccess(): void {
+    this.isLoading = false;
   }
 
   onClose(): void {

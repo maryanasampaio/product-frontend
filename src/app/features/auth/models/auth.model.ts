@@ -4,12 +4,15 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
+  token: string;              // Backend retorna 'token'
   username: string;
-  expiresIn?: number;
+  permission: string;         // Ex: 'ADMIN', 'USER'
+  message?: string;           // Mensagem do backend
+  expiresIn?: number;         // Opcional
 }
 
 export interface User {
   username: string;
-  accessToken: string;
+  token: string;
+  permission: string;
 }

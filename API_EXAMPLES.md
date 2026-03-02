@@ -106,7 +106,7 @@ GET http://localhost:3000/api/products?category=Sofá
 ### Query Parameters
 
 - `category` (opcional): Filtra por categoria
-- `condition` (opcional): `novo` ou `usado`
+- `condition` (opcional): `novo` ou `seminovo`
 - `featured` (opcional): `true` ou `false`
 - `soldDate` (opcional): `null` (apenas não vendidos)
 
@@ -591,7 +591,7 @@ Se não enviados, backend deve retornar erro 400:
   "details": [
     "Campo 'name' é obrigatório",
     "Campo 'price' deve ser um número positivo",
-    "Campo 'condition' deve ser 'novo' ou 'usado'"
+    "Campo 'condition' deve ser 'novo' ou 'seminovo'"
   ]
 }
 ```

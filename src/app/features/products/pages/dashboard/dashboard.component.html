@@ -222,7 +222,7 @@
 <app-admin-login-modal
   *ngIf="showAdminLoginModal"
   (closeModal)="closeAdminLoginModal()"
-  (adminAuthenticated)="onAdminAuthenticated()">
+  (adminAuthenticated)="onAdminAuthenticated($event)">
 </app-admin-login-modal>
 
 <!-- Modal de Boas-vindas -->
@@ -230,13 +230,6 @@
   *ngIf="showWelcomeModal"
   (closeModal)="closeWelcomeModal()">
 </app-welcome-modal>
-
-<!-- Modal de Login Admin -->
-<app-admin-login-modal
-  *ngIf="showAdminLoginModal"
-  (closeModal)="closeAdminLoginModal()"
-  (adminAuthenticated)="onAdminAuthenticated()">
-</app-admin-login-modal>
 
 <!-- Modal de Boas-vindas -->
 <app-welcome-modal

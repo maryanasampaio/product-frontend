@@ -6,17 +6,19 @@ import { Observable } from "rxjs";
 
 /**
  * Repository para comunicação com API de produtos
- * Endpoints: http://localhost:3000/api/products
+ * Base: http://localhost:8080
+ * Rotas públicas (sem token): GET /produtos, GET /produtos/:id
+ * Rotas privadas (com token): POST, PUT, DELETE, POST /sold
  */
 @Injectable({ providedIn: 'root' })
 export class ProductsRepository {
 
-  private apiUrl = environment.apiUrl; // http://localhost:3000/api
+  private readonly apiUrl = environment.apiUrl; // http://localhost:8080
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
-   * Buscar todos os produtos
+   * Buscar todos os produtos (PÚBLICO - sem token)
    * GET /produtos
    */
   buscarProdutos(): Observable<ProductResponse[]> {
@@ -24,7 +26,7 @@ export class ProductsRepository {
   }
 
   /**
-   * Buscar produto por ID
+   * Buscar produto por ID (PÚBLICO - sem token)
    * GET /produtos/:id
    */
   buscarProdutoPorId(id: number): Observable<ProductResponse> {
@@ -32,7 +34,7 @@ export class ProductsRepository {
   }
 
   /**
-   * Criar novo produto
+   * Criar novo produto (PRIVADO - requer token admin)
    * POST /produtos
    */
   criarProduto(data: ProductFormData): Observable<Product> {
@@ -40,7 +42,7 @@ export class ProductsRepository {
   }
 
   /**
-   * Atualizar produto existente
+   * Atualizar produto existente (PRIVADO - requer token admin)
    * PUT /produtos/:id
    */
   atualizarProduto(id: number, data: Partial<ProductFormData>): Observable<Product> {
@@ -48,7 +50,7 @@ export class ProductsRepository {
   }
 
   /**
-   * Deletar produto
+   * Deletar produto (PRIVADO - requer token admin)
    * DELETE /produtos/:id
    */
   removerProduto(id: number): Observable<void> {
@@ -56,7 +58,7 @@ export class ProductsRepository {
   }
 
   /**
-   * Marcar produto como vendido
+   * Marcar produto como vendido (PRIVADO - requer token admin)
    * POST /produtos/:id/sold
    */
   marcarComoVendido(id: number): Observable<Product> {
