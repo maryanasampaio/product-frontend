@@ -1,0 +1,147 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { AdminModeService } from '../../../core/services/admin-mode.service';
+import { SidebarService } from '../../../core/services/sidebar.service';
+import { Subject, takeUntil } from 'rxjs';
+
+@Component({
+  selector: 'app-sidebar',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  template: `
+    <!-- Sidebar -->
+    <aside 
+      [class.translate-x-0]="isOpen"
+      [class.-translate-x-full]="!isOpen"
+      class="fixed left-0 top-0 h-full w-64 bg-white shadow-xl z-30 border-r border-gray-200 transition-transform duration-300 ease-in-out">
+      
+      <!-- Header com botão de fechar -->
+      <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-orange-300 to-orange-200 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          Menu
+        </h2>
+        <button
+          (click)="closeSidebar()"
+          class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="p-4 space-y-2">
+        <a 
+          routerLink="/dashboard" 
+          routerLinkActive="bg-orange-50 text-orange-600 font-bold"
+          [routerLinkActiveOptions]="{exact: true}"
+          (click)="onMobileClose()"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          Produtos
+        </a>
+
+        <!-- Gerenciamento (só para admin) -->
+        <a 
+          *ngIf="(adminModeService.isAdmin$ | async)"
+          routerLink="/gerenciamento" 
+          routerLinkActive="bg-orange-50 text-orange-600 font-bold"
+          (click)="onMobileClose()"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Gerenciamento
+        </a>
+      </nav>
+
+      <!-- Divider -->
+      <div class="border-t border-gray-200 my-4"></div>
+
+      <!-- Configurações -->
+      <nav class="p-4 space-y-2">
+        <!-- Notificações (só para usuários não-admin) -->
+        <a 
+          *ngIf="!(adminModeService.isAdmin$ | async)"
+          routerLink="/configuracoes" 
+          routerLinkActive="bg-orange-50 text-orange-600 font-bold"
+          (click)="onMobileClose()"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          Notificações
+        </a>
+
+        <!-- Sair do Admin (só para admin) -->
+        <button 
+          *ngIf="(adminModeService.isAdmin$ | async)"
+          (click)="onLogoutAdmin()"
+          class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sair do Admin
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Botão de Abrir (sempre visível quando fechado) -->
+    <button
+      *ngIf="!isOpen"
+      (click)="toggleSidebar()"
+      class="fixed left-6 top-6 z-20 bg-white/90 backdrop-blur-sm text-gray-600 hover:text-orange-500 shadow-md rounded-lg p-2.5 hover:shadow-lg transition-all"
+      title="Abrir Menu">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+  `,
+  styles: []
+})
+export class SidebarComponent implements OnInit, OnDestroy {
+  isOpen = false;
+  private readonly destroy$ = new Subject<void>();
+
+  constructor(
+    public readonly adminModeService: AdminModeService,
+    private readonly sidebarService: SidebarService
+  ) {}
+
+  ngOnInit(): void {
+    this.sidebarService.isOpen$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isOpen => {
+        this.isOpen = isOpen;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarService.toggle();
+  }
+
+  closeSidebar(): void {
+    this.sidebarService.close();
+  }
+
+  onMobileClose(): void {
+    // Mantém comportamento para navegação
+  }
+
+  onLogoutAdmin(): void {
+    if (confirm('Deseja realmente sair do modo admin?')) {
+      this.adminModeService.disableAdminMode();
+    }
+  }
+}

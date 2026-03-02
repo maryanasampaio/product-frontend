@@ -4,13 +4,12 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  accessToken: string;
   username: string;
-  nome: string;
-  token: string;
+  expiresIn?: number;
 }
 
 export interface User {
   username: string;
-  nome: string;
-  token: string;
+  accessToken: string;
 }

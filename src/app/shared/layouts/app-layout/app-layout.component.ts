@@ -16,26 +16,48 @@
  * - Todas rotas protegidas
  */
 
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { SidebarComponent } from '../../components/sidebar/sidebar.component';
+import { SidebarService } from '../../../core/services/sidebar.service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [CommonModule, RouterOutlet, SidebarComponent],
   template: `
-    <div class="min-h-screen bg-gray-50">
-      <!-- HEADER/NAVBAR (adicionar futuramente) -->
-      <!-- <app-navbar /> -->
+    <div class="min-h-screen bg-gray-50 flex">
+      <!-- SIDEBAR (sempre presente, abre/fecha) -->
+      <app-sidebar />
 
       <!-- CONTEÚDO PRINCIPAL -->
-      <main class="container mx-auto px-4 py-8">
+      <main 
+        class="flex-1 transition-all duration-300 ease-in-out"
+        [class.ml-64]="isSidebarOpen"
+        [class.ml-0]="!isSidebarOpen">
         <router-outlet />
       </main>
-
-      <!-- FOOTER (opcional) -->
-      <!-- <app-footer /> -->
     </div>
   `
 })
-export class AppLayoutComponent {}
+export class AppLayoutComponent implements OnInit, OnDestroy {
+  isSidebarOpen = false;
+  private readonly destroy$ = new Subject<void>();
+
+  constructor(private readonly sidebarService: SidebarService) {}
+
+  ngOnInit(): void {
+    this.sidebarService.isOpen$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isOpen => {
+        this.isSidebarOpen = isOpen;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+}

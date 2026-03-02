@@ -1,41 +1,64 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   // ============================================================================
-  // ROTAS DE AUTENTICAÇÃO (SEM PROTEÇÃO)
+  // ROTA RAIZ - REDIRECIONA PARA DASHBOARD
   // ============================================================================
-  // Usa AuthLayoutComponent para centralizar conteúdo
   {
     path: '',
+    redirectTo: 'dashboard',
+    pathMatch: 'full'
+  },
+
+  // ============================================================================
+  // ROTAS PÚBLICAS (COM APP LAYOUT)
+  // ============================================================================
+  {
+    path: 'dashboard',
     loadComponent: () =>
-      import('./shared/layouts/auth-layout/auth-layout.component').then((m) => m.AuthLayoutComponent),
+      import('./shared/layouts/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
     children: [
       {
         path: '',
-        redirectTo: 'login',
-        pathMatch: 'full'
+        loadComponent: () =>
+          import('./features/products/pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
-        path: 'login',
+        path: 'produto/:id',
         loadComponent: () =>
-          import('./features/auth/pages/login/login.component').then((m) => m.LoginComponent),
+          import('./features/products/pages/product-detail/product-detail.component').then((m) => m.ProductDetailComponent),
       }
     ]
   },
 
   // ============================================================================
-  // ROTAS PÚBLICAS (SEM PROTEÇÃO)
+  // ROTA DE GERENCIAMENTO FINANCEIRO
   // ============================================================================
   {
-    path: '',
+    path: 'gerenciamento',
     loadComponent: () =>
       import('./shared/layouts/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
     children: [
       {
-        path: 'dashboard',
+        path: '',
         loadComponent: () =>
-          import('./features/products/pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+          import('./features/management/pages/financial-dashboard/financial-dashboard.component').then((m) => m.FinancialDashboardComponent),
+      }
+    ]
+  },
+
+  // ============================================================================
+  // ROTA DE CONFIGURAÇÕES
+  // ============================================================================
+  {
+    path: 'configuracoes',
+    loadComponent: () =>
+      import('./shared/layouts/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/settings/pages/notifications-settings/notifications-settings.component').then((m) => m.NotificationsSettingsComponent),
       }
     ]
   },
@@ -45,6 +68,6 @@ export const routes: Routes = [
   // ============================================================================
   {
     path: '**',
-    redirectTo: 'login'
+    redirectTo: 'dashboard'
   }
 ];

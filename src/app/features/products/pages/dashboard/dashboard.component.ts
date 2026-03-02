@@ -1,65 +1,299 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ProductService } from '../../services/product.service';
-import { ProductsRepository } from '../../repository/product.repository';
-import { ProductResponse } from '../../models/product.model';
-// import { AuthService } from '../../../auth/services/auth.service';
-import { finalize } from 'rxjs';
+import { Product, ProductResponse, ProductFormData } from '../../models/product.model';
+import { AdminModeService } from '../../../../core/services/admin-mode.service';
+import { ProductFormModalComponent } from '../../components/product-form-modal/product-form-modal.component';
+import { AdminLoginModalComponent } from '../../../../shared/components/admin-login-modal/admin-login-modal.component';
+import { WelcomeModalComponent } from '../../../../shared/components/welcome-modal/welcome-modal.component';
+import { finalize, Subject, takeUntil } from 'rxjs';
 
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   templateUrl: './dashboard.component.html',
-  imports: [CommonModule]
+  imports: [CommonModule, ProductFormModalComponent, AdminLoginModalComponent, WelcomeModalComponent]
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   errorMessage = '';
   isLoading = false;
-  produtos: ProductResponse[] = [
+  produtos: ProductResponse[] = [];
+  isAdmin = false;
+  private readonly destroy$ = new Subject<void>();
+  
+  // Filtros por categoria
+  selectedCategory: string | null = null;
+  categories = [
+    { label: 'Todos', value: null, icon: '🏠' },
+    { label: 'Sofás', value: 'Sofá', icon: '🛋️' },
+    { label: 'Mesas', value: 'Mesa', icon: '🪑' },
+    { label: 'Armários', value: 'Guarda-Roupa', icon: '🚪' },
+    { label: 'Cadeiras', value: 'Cadeira', icon: '💺' },
+    { label: 'Racks', value: 'Rack', icon: '📺' },
+    { label: 'Eletros', value: 'Eletrodoméstico', icon: '⚡' }
   ];
+  
+  // Modais
+  showCreateModal = false;
+  showEditModal = false;
+  showAdminLoginModal = false;
+  showWelcomeModal = false;
+  selectedProduct?: Product;
+  
+  // Contador de cliques para admin (triple-click na logo)
 
-  constructor(private productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly cdr: ChangeDetectorRef,
+    private readonly router: Router,
+    public readonly adminModeService: AdminModeService
+  ) {}
 
   ngOnInit(): void {
+    console.log('[Dashboard] ngOnInit - iniciando componente');
+    
+    // Inscreve para mudanças no modo admin
+    this.adminModeService.isAdmin$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((isAdmin: boolean) => {
+        console.log('[Dashboard] Admin mode alterado:', isAdmin);
+        this.isAdmin = isAdmin;
+        this.cdr.detectChanges();
+      });
+
+    // Verificar se deve mostrar modal de boas-vindas
+    this.checkWelcomeModal();
+
+    console.log('[Dashboard] Chamando loadProdutos');
     this.loadProdutos();
   }
 
+  ngOnDestroy(): void {
+    console.log('[Dashboard] ngOnDestroy - limpando subscrições');
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   private loadProdutos() {
+    console.log('[Dashboard] loadProdutos - começando');
     this.isLoading = true;
+    this.errorMessage = '';
+    this.cdr.detectChanges();
+    
     this.productService.buscarProdutos()
-      .pipe(finalize(() => { this.isLoading = false; }))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          console.log('[Dashboard] loadProdutos - finalizando (isLoading = false)');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        })
+      )
       .subscribe({
-      next: (resp: ProductResponse[]) => {
-        this.produtos = resp.map((p) => ({
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          price: p.price,
-          description: p.description,
-          images: typeof p.images === 'string' ? safeParseImages(p.images) : p.images,
-          createdAt: p.createdAt,
-          updatedAt: p.updatedAt,
-        } as ProductResponse));
-        console.log(this.produtos);
-      },
-      error: (err) => {
-        this.errorMessage = err?.message || 'Erro ao carregar produtos';
-      },
-    });
+        next: (resp: ProductResponse[]) => {
+          console.log('[Dashboard] loadProdutos - produtos recebidos:', resp.length);
+          this.produtos = resp;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('[Dashboard] loadProdutos - erro:', err);
+          this.errorMessage = err?.message || 'Erro ao carregar produtos';
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   trackByProductId(index: number, produto: ProductResponse): number {
     return produto.id;
   }
-}
 
-function safeParseImages(value: string | null): string[] | null {
-  if (!value) return null;
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
+  // Filtro de categorias
+  get filteredProducts(): ProductResponse[] {
+    if (!this.selectedCategory) {
+      return this.produtos;
+    }
+    return this.produtos.filter(p => p.category === this.selectedCategory);
+  }
+
+  get categoryTitle(): string {
+    if (!this.selectedCategory) {
+      return 'Nossos Produtos';
+    }
+    const category = this.categories.find(c => c.value === this.selectedCategory);
+    return category ? category.label : 'Produtos';
+  }
+
+  selectCategory(category: string | null): void {
+    this.selectedCategory = category;
+  }
+
+  checkWelcomeModal(): void {
+    // Verifica se o usuário já viu o modal de boas-vindas
+    const hasSeenWelcome = localStorage.getItem('welcomeModalShown');
+    if (!hasSeenWelcome) {
+      // Aguarda 1 segundo para mostrar o modal após a página carregar
+      setTimeout(() => {
+        this.showWelcomeModal = true;
+        this.cdr.detectChanges();
+      }, 1000);
+    }
+  }
+
+  // Admin login (ativado por triple-click na logo)
+  private logoClickCount = 0;
+  private logoClickTimeout?: any;
+
+  onLogoClick(): void {
+    this.logoClickCount++;
+    
+    if (this.logoClickTimeout) {
+      clearTimeout(this.logoClickTimeout);
+    }
+
+    if (this.logoClickCount === 3) {
+      // Triple-click detectado - mostrar modal de admin
+      this.showAdminLoginModal = true;
+      this.logoClickCount = 0;
+    } else {
+      // Reset após 1 segundo
+      this.logoClickTimeout = setTimeout(() => {
+        this.logoClickCount = 0;
+      }, 1000);
+    }
+  }
+
+  onAdminAuthenticated(): void {
+    const loginObservable = this.adminModeService.enableAdminMode();
+    if (loginObservable) {
+      loginObservable.subscribe({
+        next: () => {
+          console.log('[Dashboard] Admin autenticado com sucesso');
+          this.showAdminLoginModal = false;
+        },
+        error: (error) => {
+          console.error('[Dashboard] Erro ao autenticar admin:', error);
+          alert('Erro ao fazer login. Verifique se o backend está rodando.');
+        }
+      });
+    } else {
+      this.showAdminLoginModal = false;
+    }
+  }
+
+  closeAdminLoginModal(): void {
+    this.showAdminLoginModal = false;
+  }
+
+  closeWelcomeModal(): void {
+    this.showWelcomeModal = false
+  }
+
+  toggleAdminMode(): void {
+    const result = this.adminModeService.toggleAdminMode();
+    if (result && typeof result.subscribe === 'function') {
+      result.subscribe({
+        next: () => {
+          console.log('[Dashboard] Admin mode alternado com sucesso');
+        },
+        error: (error) => {
+          console.error('[Dashboard] Erro ao alternar admin mode:', error);
+        }
+      });
+    }
+  }
+
+  // Modal de criação
+  openCreateModal(): void {
+    this.selectedProduct = undefined;
+    this.showCreateModal = true;
+  }
+
+  closeCreateModal(): void {
+    this.showCreateModal = false;
+    this.selectedProduct = undefined;
+  }
+
+  // Navegação para página de detalhes
+  verDetalhes(id: number): void {
+    this.router.navigate(['/dashboard/produto', id]);
+  }
+
+  // Modal de edição
+  openEditModal(produto: Product): void {
+    this.selectedProduct = produto;
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.selectedProduct = undefined;
+  }
+
+  // CRUD Actions
+  onCreateProduct(data: ProductFormData): void {
+    this.productService.criarProduto(data).subscribe({
+      next: () => {
+        this.closeCreateModal();
+        this.loadProdutos();
+      },
+      error: (err) => {
+        alert('Erro ao criar produto: ' + err.message);
+      }
+    });
+  }
+
+  onUpdateProduct(data: ProductFormData): void {
+    if (!this.selectedProduct) return;
+    
+    this.productService.atualizarProduto(this.selectedProduct.id, data).subscribe({
+      next: () => {
+        this.closeEditModal();
+        this.loadProdutos();
+      },
+      error: (err) => {
+        alert('Erro ao atualizar produto: ' + err.message);
+      }
+    });
+  }
+
+  removerProduto(id: number, event: Event): void {
+    event.stopPropagation();
+    if (confirm('Tem certeza que deseja remover este produto?')) {
+      this.productService.removerProduto(id).subscribe({
+        next: () => {
+          this.loadProdutos();
+        },
+        error: (err) => {
+          alert('Erro ao remover produto: ' + err.message);
+        }
+      });
+    }
+  }
+
+  marcarComoVendido(id: number, event: Event): void {
+    event.stopPropagation();
+    if (confirm('Marcar este produto como vendido?')) {
+      this.productService.marcarComoVendido(id).subscribe({
+        next: () => {
+          this.loadProdutos();
+        },
+        error: (err) => {
+          alert('Erro ao marcar como vendido: ' + err.message);
+        }
+      });
+    }
+  }
+
+  formatarPreco(preco: number): string {
+    return (preco / 100).toFixed(2).replace('.', ',');
+  }
+
+  calcularLucro(produto: ProductResponse): number {
+    if (!produto.costPrice) return 0;
+    return produto.price - produto.costPrice;
   }
 }
+
+
