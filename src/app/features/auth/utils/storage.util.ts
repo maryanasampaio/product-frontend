@@ -202,6 +202,54 @@ export function removeUser(): void {
   localStorage.removeItem('user_data');
 }
 
+/**
+ * Salva a permissão do usuário no localStorage
+ *
+ * @param permission - Permissão do usuário (ex: 'ADMIN', 'USER')
+ *
+ * Exemplo:
+ * ```typescript
+ * savePermission('ADMIN');
+ * ```
+ */
+export function savePermission(permission: string): void {
+  if (!isBrowser()) return;
+  localStorage.setItem('user_permission', permission);
+}
+
+/**
+ * Recupera a permissão do usuário do localStorage
+ *
+ * @returns Permissão do usuário ou null se não existir
+ *
+ * Exemplo:
+ * ```typescript
+ * const permission = getPermission();
+ * if (permission === 'ADMIN') {
+ *   console.log('Usuário é administrador');
+ * }
+ * ```
+ */
+export function getStoredPermission(): string | null {
+  if (!isBrowser()) return null;
+  return localStorage.getItem('user_permission');
+}
+
+/**
+ * Remove a permissão do localStorage
+ *
+ * Usado no logout para limpar a permissão salva.
+ *
+ * Exemplo:
+ * ```typescript
+ * removePermission();
+ * ```
+ */
+export function removePermission(): void {
+  if (!isBrowser()) return;
+  localStorage.removeItem('user_permission');
+}
+
 function isBrowser(): boolean {
   return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 }

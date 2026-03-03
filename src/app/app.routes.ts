@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   // ============================================================================
@@ -32,10 +33,12 @@ export const routes: Routes = [
   },
 
   // ============================================================================
-  // ROTA DE GERENCIAMENTO FINANCEIRO
+  // ROTA DE GERENCIAMENTO FINANCEIRO (REQUER ADMIN)
   // ============================================================================
   {
     path: 'gerenciamento',
+    canActivate: [roleGuard],
+    data: { requiredPermission: 'ADMIN' },
     loadComponent: () =>
       import('./shared/layouts/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
     children: [

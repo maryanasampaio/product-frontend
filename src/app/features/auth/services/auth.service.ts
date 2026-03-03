@@ -16,7 +16,17 @@ import { Injectable } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { AuthRepository } from '../repository/auth.repository';
 import { LoginRequest, LoginResponse } from '../models/auth.model';
-import { saveToken, saveUser, removeToken, removeUser, getToken, getUser } from '../utils/storage.util';
+import { 
+  getToken, 
+  saveToken, 
+  removeToken, 
+  saveUser, 
+  removeUser, 
+  getUser,
+  savePermission, 
+  removePermission, 
+  getStoredPermission 
+} from '../utils/storage.util';
 
 @Injectable({
   providedIn: 'root'
@@ -44,6 +54,12 @@ export class AuthService {
         // Salva token no localStorage (backend retorna 'token', não 'accessToken')
         saveToken(response.token);
         saveUser(response.username, response.username);
+        
+        // ✅ NOVO: Salva a permission retornada pelo backend
+        if (response.permission) {
+          savePermission(response.permission);
+        }
+        
         console.log('[AuthService] Login bem-sucedido:', response.username, '| Permission:', response.permission);
       })
       // NÃO trata erro aqui - deixa o component decidir o que fazer
@@ -58,6 +74,7 @@ export class AuthService {
   logout(): void {
     removeToken();
     removeUser();
+    removePermission(); // ✅ NOVO: Remove a permission também
   }
 
   /**
@@ -103,16 +120,35 @@ export class AuthService {
   // Helpers
   // ---------------------
   /**
-   * Retorna a permissão atual do usuário a partir do JWT
+   * Retorna a permissão atual do usuário
+   * 
+   * Primeiro tenta do localStorage (salva durante o login)
+   * Se não encontrar, tenta extrair do JWT token (fallback)
+   * 
    * Exemplos: 'ADMIN', 'USER'
    */
   getPermission(): string | null {
+    // ✅ PRIORIDADE 1: Busca do localStorage (mais confiável)
+    const storedPermission = getStoredPermission();
+    if (storedPermission) {
+      return storedPermission;
+    }
+    
+    // ✅ FALLBACK: Tenta extrair do JWT se não estiver no localStorage
     const token = getToken();
     if (!token) return null;
+    
     try {
       const payload = this.decodeJwtPayload(token);
       const perm = payload?.permission;
-      return typeof perm === 'string' ? perm : null;
+      
+      // Se encontrou no JWT, salva no localStorage para próximas consultas
+      if (typeof perm === 'string') {
+        savePermission(perm);
+        return perm;
+      }
+      
+      return null;
     } catch {
       return null;
     }

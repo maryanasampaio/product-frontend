@@ -13,6 +13,7 @@ export interface Product {
 	category: string; // Ex: 'sofá', 'mesa', 'cadeira', 'cama', 'armário'
 	images: string[] | null; // URLs das imagens
 	stock: number; // Quantidade em estoque
+	disponivel: number; // 1=disponível, 0=vendido/indisponível (fonte de verdade)
 	dimensions?: {
 		width: number;
 		height: number;

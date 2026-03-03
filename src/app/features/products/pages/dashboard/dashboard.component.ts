@@ -7,6 +7,7 @@ import { AdminModeService } from '../../../../core/services/admin-mode.service';
 import { ProductFormModalComponent } from '../../components/product-form-modal/product-form-modal.component';
 import { AdminLoginModalComponent } from '../../../../shared/components/admin-login-modal/admin-login-modal.component';
 import { WelcomeModalComponent } from '../../../../shared/components/welcome-modal/welcome-modal.component';
+import { CapitalizePipe } from '../../../../shared/pipes/capitalize.pipe';
 import { finalize, Subject, takeUntil } from 'rxjs';
 
 
@@ -14,7 +15,7 @@ import { finalize, Subject, takeUntil } from 'rxjs';
   selector: 'app-dashboard',
   standalone: true,
   templateUrl: './dashboard.component.html',
-  imports: [CommonModule, ProductFormModalComponent, AdminLoginModalComponent, WelcomeModalComponent]
+  imports: [CommonModule, ProductFormModalComponent, AdminLoginModalComponent, WelcomeModalComponent, CapitalizePipe]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   errorMessage = '';
@@ -236,7 +237,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Modal de edição
   openEditModal(produto: Product): void {
-    this.selectedProduct = produto;
+    console.log('[Dashboard] Abrindo modal de edição para produto:', produto);
+    this.selectedProduct = { ...produto }; // Cria uma cópia para evitar mutação
     this.showEditModal = true;
   }
 
@@ -291,10 +293,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (confirm('Marcar este produto como vendido?')) {
       this.productService.marcarComoVendido(id).subscribe({
         next: () => {
+          console.log('[Dashboard] Produto marcado como vendido');
           this.loadProdutos();
         },
         error: (err) => {
-          alert('Erro ao marcar como vendido: ' + err.message);
+          console.error('[Dashboard] Erro ao marcar como vendido:', err);
+          alert('❌ Erro ao marcar como vendido. Verifique sua conexão e permissões.');
+        }
+      });
+    }
+  }
+
+  reativarProduto(id: number, event: Event): void {
+    event.stopPropagation();
+    
+    if (confirm('Reativar este produto para venda?')) {
+      this.productService.reativarProduto(id).subscribe({
+        next: () => {
+          console.log('[Dashboard] Produto reativado');
+          alert('✅ Produto reativado com sucesso!');
+          this.loadProdutos();
+        },
+        error: (err) => {
+          console.error('[Dashboard] Erro ao reativar produto:', err);
+          alert('❌ Erro ao reativar produto. Verifique sua conexão e permissões.');
         }
       });
     }

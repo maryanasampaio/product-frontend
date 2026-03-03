@@ -60,8 +60,21 @@ export class ProductsRepository {
   /**
    * Marcar produto como vendido (PRIVADO - requer token admin)
    * POST /produtos/:id/sold
+   * Define: disponivel = 0, stock = 0
    */
   marcarComoVendido(id: number): Observable<Product> {
     return this.http.post<Product>(`${this.apiUrl}/produtos/${id}/sold`, {});
+  }
+
+  /**
+   * Reativar produto (tornar disponível novamente) (PRIVADO - requer token admin)
+   * POST /produtos/:id/available
+   * Define: disponivel = 1, soldDate = null
+   * @param id - ID do produto
+   * @param stock - Estoque opcional (padrão: 1 ou mantém >0 existente)
+   */
+  reativarProduto(id: number, stock?: number): Observable<Product> {
+    const body = stock !== undefined ? { stock } : {};
+    return this.http.post<Product>(`${this.apiUrl}/produtos/${id}/available`, body);
   }
 }

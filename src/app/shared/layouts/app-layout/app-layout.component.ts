@@ -32,10 +32,17 @@ import { Subject, takeUntil } from 'rxjs';
       <!-- SIDEBAR (sempre presente, abre/fecha) -->
       <app-sidebar />
 
+      <!-- OVERLAY MOBILE (apenas mobile) -->
+      <div 
+        *ngIf="isSidebarOpen"
+        (click)="closeSidebar()"
+        class="fixed inset-0 bg-black/50 z-20 transition-opacity lg:hidden">
+      </div>
+
       <!-- CONTEÚDO PRINCIPAL -->
       <main 
         class="flex-1 transition-all duration-300 ease-in-out"
-        [class.ml-64]="isSidebarOpen"
+        [class.lg:ml-64]="isSidebarOpen"
         [class.ml-0]="!isSidebarOpen">
         <router-outlet />
       </main>
@@ -59,5 +66,9 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  closeSidebar(): void {
+    this.sidebarService.close();
   }
 }

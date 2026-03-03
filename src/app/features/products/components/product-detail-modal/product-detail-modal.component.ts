@@ -88,7 +88,7 @@ import { Product } from '../../models/product.model';
 
         <!-- Botão WhatsApp -->
         <button 
-          *ngIf="!product.soldDate"
+          *ngIf="product.disponivel === 1"
           (click)="entrarEmContato()"
           class="w-full py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -97,7 +97,7 @@ import { Product } from '../../models/product.model';
           Entre em Contato e Reserve Agora
         </button>
 
-        <div *ngIf="product.soldDate" class="text-center p-6 bg-red-50 rounded-xl">
+        <div *ngIf="product.disponivel === 0" class="text-center p-6 bg-red-50 rounded-xl">
           <span class="text-2xl font-bold text-red-600">✓ PRODUTO VENDIDO</span>
         </div>
       </div>

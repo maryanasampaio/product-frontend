@@ -108,23 +108,37 @@ export class AuthInterceptor implements HttpInterceptor {
 
   /**
    * Verifica se o endpoint é público (não precisa de token)
-   * Rotas públicas: GET /produtos, GET /produtos/:id, GET /api/products, GET /api/products/:id
+   * 
+   * Rotas públicas:
+   * - POST/GET /auth/login (login)
+   * - GET /produtos (listar produtos)
+   * - GET /produtos/:id (detalhes do produto)
+   * - GET /api/products (listar produtos)
+   * - GET /api/products/:id (detalhes do produto)
+   * 
+   * ⚠️ IMPORTANTE: /api/financeiro/* e outros endpoints são PRIVADOS!
    */
   private isPublicEndpoint(req: HttpRequest<any>): boolean {
     const url = req.url.toLowerCase();
     const method = req.method.toUpperCase();
     
-    // Endpoints públicos: apenas GET de produtos
-    if (method === 'GET') {
-      return url.includes('/produtos') || url.includes('/api/products');
-    }
-    
-    // Login é sempre público
+    // Login é sempre público (qualquer método)
     if (url.includes('/auth/login')) {
       return true;
     }
     
-    return false;
+    // Apenas GET pode ser público (outros métodos sempre requerem token)
+    if (method !== 'GET') {
+      return false;
+    }
+    
+    // ❌ Endpoints financeiros são PRIVADOS (requerem token ADMIN)
+    if (url.includes('/api/financeiro')) {
+      return false;
+    }
+    
+    // ✅ Endpoints básicos de produtos são PÚBLICOS
+    return url.includes('/produtos') || url.includes('/api/products');
   }
 
   private handleAuthError(error: HttpErrorResponse, req: HttpRequest<any>) {

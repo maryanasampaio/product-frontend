@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -167,8 +167,8 @@ import { Product, ProductFormData } from '../../models/product.model';
             </div>
             
             <!-- Preview das imagens -->
-            <div *ngIf="imageUrls.length > 0" class="grid grid-cols-4 gap-3">
-              <div *ngFor="let url of imageUrls; let i = index" class="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200 group">
+            <div class="grid grid-cols-4 gap-3">
+              <div *ngFor="let url of imageUrls; let i = index; trackBy: trackByIndex" class="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200 group">
                 <img [src]="url" alt="Preview" class="w-full h-full object-cover">
                 <button 
                   type="button"
@@ -183,6 +183,10 @@ import { Product, ProductFormData } from '../../models/product.model';
                 </div>
               </div>
             </div>
+            
+            <p *ngIf="imageUrls.length === 0" class="text-xs text-gray-500 text-center py-2">
+              Nenhuma imagem selecionada
+            </p>
           </div>
         </div>
 
@@ -215,7 +219,7 @@ import { Product, ProductFormData } from '../../models/product.model';
     </app-modal>
   `
 })
-export class ProductFormModalComponent implements OnInit {
+export class ProductFormModalComponent implements OnInit, OnChanges {
   @Input() isOpen = false;
   @Input() product?: Product;
   @Output() closeModal = new EventEmitter<void>();
@@ -239,14 +243,31 @@ export class ProductFormModalComponent implements OnInit {
     featured: false
   };
 
+  constructor(
+    private readonly cdr: ChangeDetectorRef
+  ) {}
+
   ngOnInit(): void {
+    this.loadProductData();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Detecta mudanças no @Input() product
+    if (changes['product'] && !changes['product'].firstChange) {
+      this.loadProductData();
+    }
+  }
+
+  private loadProductData(): void {
+    console.log('[ProductFormModal] loadProductData chamado. Product:', this.product);
+    
     if (this.product) {
       this.editMode = true;
       this.imageUrls = this.product.images || [];
       this.formData = {
         name: this.product.name,
         description: this.product.description,
-        price: this.product.price / 100,
+        price: this.product.price / 100, // Converte de centavos para reais
         costPrice: this.product.costPrice ? this.product.costPrice / 100 : undefined,
         condition: this.product.condition,
         category: this.product.category,
@@ -259,6 +280,27 @@ export class ProductFormModalComponent implements OnInit {
         warranty: this.product.warranty,
         featured: this.product.featured
       };
+      console.log('[ProductFormModal] Formulário preenchido com:', this.formData);
+    } else {
+      // Reset para modo de criação
+      console.log('[ProductFormModal] Modo criação - formulário resetado');
+      this.editMode = false;
+      this.imageUrls = [];
+      this.formData = {
+        name: '',
+        description: '',
+        price: 0,
+        costPrice: 0,
+        condition: 'novo',
+        category: '',
+        images: null,
+        stock: 1,
+        material: '',
+        color: '',
+        brand: '',
+        warranty: '',
+        featured: false
+      };
     }
   }
 
@@ -268,21 +310,42 @@ export class ProductFormModalComponent implements OnInit {
       const maxFiles = 4;
       const filesToAdd = Math.min(input.files.length, maxFiles - this.imageUrls.length);
       
+      console.log(`[ProductFormModal] Selecionadas ${filesToAdd} imagens para carregar`);
+      
       for (let i = 0; i < filesToAdd; i++) {
         const file = input.files[i];
         const reader = new FileReader();
+        
         reader.onload = (e: ProgressEvent<FileReader>) => {
-          if (e.target?.result) {
-            this.imageUrls.push(e.target.result as string);
+          if (e.target && e.target.result) {
+            const imageUrl = e.target.result as string;
+            console.log(`[ProductFormModal] Imagem carregada, tamanho: ${imageUrl.length} chars`);
+            
+            // Adiciona imagem dentro da zona do Angular
+            this.imageUrls.push(imageUrl);
+            
+            // Força detecção de mudanças imediatamente
+            this.cdr.detectChanges();
+            
+            console.log(`[ProductFormModal] Total de imagens agora: ${this.imageUrls.length}`);
           }
         };
+        
         reader.readAsDataURL(file);
       }
+      
+      // Limpa o input para permitir selecionar o mesmo arquivo novamente
+      input.value = '';
     }
   }
 
   removeImage(index: number): void {
     this.imageUrls.splice(index, 1);
+    this.cdr.detectChanges();
+  }
+
+  trackByIndex(index: number): number {
+    return index;
   }
 
   onSubmit(): void {

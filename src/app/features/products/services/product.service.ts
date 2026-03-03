@@ -35,4 +35,8 @@ export class ProductService {
   marcarComoVendido(id: number): Observable<Product> {
     return this.repository.marcarComoVendido(id);
   }
+
+  reativarProduto(id: number, stock?: number): Observable<Product> {
+    return this.repository.reativarProduto(id, stock);
+  }
 }
