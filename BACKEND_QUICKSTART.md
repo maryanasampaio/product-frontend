@@ -35,7 +35,7 @@ baseURL: http://localhost:3000/api
   "description": "Descrição completa...",
   "price": 189900,              // ⚠️ EM CENTAVOS!
   "costPrice": 130000,          // ⚠️ EM CENTAVOS!
-  "condition": "novo",          // ou "usado"
+  "condition": "novo",          // ou "seminovo"
   "category": "Sofá",           // string livre
   "images": ["url1.jpg"],       // array de URLs
   "stock": 5,
@@ -63,7 +63,7 @@ baseURL: http://localhost:3000/api
   name: string,
   description: string,
   price: number,          // em centavos
-  condition: 'novo' | 'usado',
+  condition: 'novo' | 'seminovo',
   category: string,
   stock: number,
   featured: boolean
@@ -119,7 +119,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String, required: true },
   price: { type: Number, required: true },
   costPrice: Number,
-  condition: { type: String, enum: ['novo', 'usado'], required: true },
+  condition: { type: String, enum: ['novo', 'seminovo'], required: true },
   category: { type: String, required: true },
   images: [String],
   stock: { type: Number, default: 0 },

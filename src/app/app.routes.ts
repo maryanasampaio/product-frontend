@@ -67,6 +67,22 @@ export const routes: Routes = [
   },
 
   // ============================================================================
+  // ROTA DE SIMULAÇÃO DE VENDAS NO CARTÃO
+  // ============================================================================
+  {
+    path: 'simulacao',
+    loadComponent: () =>
+      import('./shared/layouts/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/simulations/pages/simulation-card/simulation-card.component').then((m) => m.SimulationCardComponent),
+      }
+    ]
+  },
+
+  // ============================================================================
   // ROTA 404 (NÃO ENCONTRADA)
   // ============================================================================
   {

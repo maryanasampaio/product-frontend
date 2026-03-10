@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { NotificationService } from '../../../../core/services/notification.service';
+import { NotificationPreferences } from '../../../../core/models/notification-preferences.model';
 
 interface NotificationSettings {
   whatsapp: {
@@ -28,6 +30,16 @@ interface NotificationSettings {
         <div class="mb-8">
           <h1 class="text-4xl font-bold text-gray-900 mb-2">Configurações de Notificações</h1>
           <p class="text-gray-600">Escolha como deseja receber atualizações sobre novos produtos</p>
+        </div>
+
+        <!-- Mensagem de Erro -->
+        <div *ngIf="errorMessage" class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg animate-fade-in">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+            <p class="text-red-700 font-medium">{{ errorMessage }}</p>
+          </div>
         </div>
 
         <!-- WhatsApp -->
@@ -203,11 +215,15 @@ export class NotificationsSettingsComponent implements OnInit {
   };
 
   showSaveConfirmation = false;
+  errorMessage = '';
 
-  constructor(private readonly route: ActivatedRoute) {}
+  constructor(
+    private readonly route: ActivatedRoute,
+    private readonly notificationService: NotificationService
+  ) {}
 
   ngOnInit(): void {
-    // Carregar configurações salvas
+    // Carregar configurações salvas (do service)
     this.loadSettings();
 
     // Verificar se veio de um tipo específico
@@ -236,34 +252,84 @@ export class NotificationsSettingsComponent implements OnInit {
   }
 
   loadSettings(): void {
-    const saved = localStorage.getItem('notificationSettings');
-    if (saved) {
-      this.settings = JSON.parse(saved);
-    }
+    this.notificationService.getPreferences().subscribe({
+      next: (prefs) => {
+        this.settings = {
+          whatsapp: prefs.whatsapp,
+          email: prefs.email,
+          push: prefs.push
+        };
+      },
+      error: (error) => {
+        console.error('Erro ao carregar preferências:', error);
+        // Continuar com valores padrão
+      }
+    });
   }
 
   saveSettings(): void {
-    localStorage.setItem('notificationSettings', JSON.stringify(this.settings));
-    this.showSaveConfirmation = true;
-    setTimeout(() => {
-      this.showSaveConfirmation = false;
-    }, 3000);
+    this.errorMessage = '';
+
+    // Validar WhatsApp se estiver ativo
+    if (this.settings.whatsapp.enabled && this.settings.whatsapp.phoneNumber) {
+      const phoneValidation = this.notificationService.validatePhoneNumber(this.settings.whatsapp.phoneNumber);
+      if (!phoneValidation.valid) {
+        this.errorMessage = `WhatsApp: ${phoneValidation.error}`;
+        return;
+      }
+      // Usar número formatado
+      this.settings.whatsapp.phoneNumber = phoneValidation.formatted || this.settings.whatsapp.phoneNumber;
+    }
+
+    // Validar email se estiver ativo
+    if (this.settings.email.enabled && this.settings.email.emailAddress) {
+      const emailValidation = this.notificationService.validateEmail(this.settings.email.emailAddress);
+      if (!emailValidation.valid) {
+        this.errorMessage = `Email: ${emailValidation.error}`;
+        return;
+      }
+    }
+
+    // Salvar usando o service
+    const prefs: NotificationPreferences = {
+      whatsapp: this.settings.whatsapp,
+      email: this.settings.email,
+      push: this.settings.push
+    };
+
+    this.notificationService.savePreferences(prefs).subscribe({
+      next: (response) => {
+        this.showSaveConfirmation = true;
+        setTimeout(() => {
+          this.showSaveConfirmation = false;
+        }, 3000);
+      },
+      error: (error) => {
+        this.errorMessage = 'Erro ao salvar preferências. Tente novamente.';
+        console.error(error);
+      }
+    });
   }
 
   onPushToggle(): void {
     if (this.settings.push.enabled) {
       this.requestPushPermission();
+    } else {
+      this.saveSettings();
     }
-    this.saveSettings();
   }
 
   async requestPushPermission(): Promise<void> {
-    if ('Notification' in globalThis) {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        this.settings.push.enabled = false;
-        alert('Você precisa permitir notificações nas configurações do navegador.');
-      }
+    const granted = await this.notificationService.requestPushPermission();
+    
+    if (granted) {
+      this.settings.push.enabled = true;
+      this.saveSettings();
+      // Enviar notificação de teste
+      this.notificationService.sendTestPushNotification();
+    } else {
+      this.settings.push.enabled = false;
+      this.errorMessage = 'Você precisa permitir notificações nas configurações do navegador.';
     }
   }
 }

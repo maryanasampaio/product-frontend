@@ -2,7 +2,7 @@
 
 ## 📌 Visão Geral
 
-Este documento descreve a API REST necessária para integração completa do frontend Angular com o backend. O sistema gerencia produtos (móveis e eletros novos e usados) com foco em vendas e gestão financeira.
+Este documento descreve a API REST necessária para integração completa do frontend Angular com o backend. O sistema gerencia produtos (móveis e eletros novos e seminovos) com foco em vendas e gestão financeira.
 
 ---
 
@@ -52,7 +52,7 @@ interface Product {
   description: string;           // Descrição completa
   price: number;                 // ⚠️ PREÇO EM CENTAVOS (ex: 50000 = R$ 500,00)
   costPrice?: number;            // ⚠️ CUSTO EM CENTAVOS (opcional, para admin)
-  condition: 'novo' | 'usado';   // Condição do produto
+  condition: 'novo' | 'seminovo';   // Condição do produto
   category: string;              // Categoria (ex: 'Sofá', 'Mesa', 'Cadeira')
   images: string[] | null;       // Array de URLs de imagens
   stock: number;                 // Quantidade em estoque
@@ -461,7 +461,7 @@ Response:
   name: string (min: 3, max: 200),
   description: string (min: 10),
   price: number (min: 0),
-  condition: 'novo' | 'usado',
+  condition: 'novo' | 'seminovo',
   category: string (min: 2),
   stock: number (min: 0),
   featured: boolean
@@ -488,7 +488,7 @@ Response:
 - `stock`: Não pode ser negativo
 - `soldDate`: Deve ser ISO 8601 válido ou null
 - `slug`: Deve ser único no banco de dados
-- `condition`: Aceita apenas `'novo'` ou `'usado'`
+- `condition`: Aceita apenas `'novo'` ou `'seminovo'`
 
 ---
 
@@ -520,7 +520,7 @@ CREATE TABLE products (
   description TEXT NOT NULL,
   price INTEGER NOT NULL CHECK (price >= 0),
   cost_price INTEGER CHECK (cost_price >= 0),
-  condition VARCHAR(10) NOT NULL CHECK (condition IN ('novo', 'usado')),
+  condition VARCHAR(10) NOT NULL CHECK (condition IN ('novo', 'seminovo')),
   category VARCHAR(100) NOT NULL,
   images TEXT[],  -- Array de URLs
   stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
@@ -550,7 +550,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String, required: true },
   price: { type: Number, required: true, min: 0 },
   costPrice: { type: Number, min: 0 },
-  condition: { type: String, required: true, enum: ['novo', 'usado'] },
+  condition: { type: String, required: true, enum: ['novo', 'seminovo'] },
   category: { type: String, required: true },
   images: [String],
   stock: { type: Number, required: true, default: 0, min: 0 },
@@ -635,7 +635,7 @@ Para popular o banco inicialmente:
     "description": "Guarda-roupa amplo com 4 portas e prateleiras internas. Estado de conservação: excelente.",
     "price": 69900,
     "costPrice": 40000,
-    "condition": "usado",
+    "condition": "seminovo",
     "category": "Guarda-Roupa",
     "images": [
       "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800"
